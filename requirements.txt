@@ -1,0 +1,2 @@
+# Testing and Code Quality dependencies
+pytest>=8.0.0
