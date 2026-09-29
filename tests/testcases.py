@@ -20,7 +20,7 @@ INVALID_DUMMY_CASES = [
     "invalid-email-format",
 ]
 
-ACTIVE_DUMMY_CASE = os.environ.get("TEST_EMAIL", "student@gmail.co.in")
+ACTIVE_DUMMY_CASE = os.environ.get("TEST_EMAIL", "student@gmail.com")
 
 def validate_niet_email(email: str) -> bool:
     if not email or not isinstance(email, str):
