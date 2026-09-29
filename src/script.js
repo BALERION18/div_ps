@@ -1,8 +1,8 @@
-// Initial mock feedbacks to showcase on first load
 const DEFAULT_FEEDBACKS = [
   {
     id: "fb-1",
     name: "Aman Gupta",
+    email: "aman.gupta@niet.co.in",
     course: "B.Tech Computer Science",
     rating: 5,
     feedback: "The DevOps and Cloud Computing curriculum is very practical and informative. The hands-on lab sessions on CI/CD pipelines are great!",
@@ -11,6 +11,7 @@ const DEFAULT_FEEDBACKS = [
   {
     id: "fb-2",
     name: "Pooja Verma",
+    email: "pooja.verma@niet.co.in",
     course: "B.Tech Data Science & AI",
     rating: 4,
     feedback: "Great faculty support and comprehensive study material. Would love to have more guest lectures from industry experts.",
@@ -18,12 +19,11 @@ const DEFAULT_FEEDBACKS = [
   }
 ];
 
-// State Management
 let feedbacks = [];
 
-// DOM Elements
 const feedbackForm = document.getElementById("feedbackForm");
 const studentNameInput = document.getElementById("studentName");
+const studentEmailInput = document.getElementById("studentEmail");
 const courseNameInput = document.getElementById("courseName");
 const feedbackTextInput = document.getElementById("feedbackText");
 const ratingButtons = document.querySelectorAll(".rating-btn");
@@ -37,19 +37,19 @@ const searchInput = document.getElementById("searchInput");
 const charCount = document.getElementById("charCount");
 const toast = document.getElementById("toast");
 
-// Validation Error Elements
 const nameError = document.getElementById("nameError");
+const emailError = document.getElementById("emailError");
 const courseError = document.getElementById("courseError");
 const feedbackError = document.getElementById("feedbackError");
 
-// Initialize Application
+const NIET_EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@niet\.co\.in$/i;
+
 document.addEventListener("DOMContentLoaded", () => {
   loadFeedbacks();
   setupEventListeners();
   renderFeedbacks();
 });
 
-// Load Feedbacks from LocalStorage or Defaults
 function loadFeedbacks() {
   const stored = localStorage.getItem("student_feedbacks");
   if (stored) {
@@ -64,33 +64,22 @@ function loadFeedbacks() {
   }
 }
 
-// Save Feedbacks to LocalStorage
 function saveFeedbacks() {
   localStorage.setItem("student_feedbacks", JSON.stringify(feedbacks));
 }
 
-// Setup Event Listeners
 function setupEventListeners() {
-  // Form Submit
   feedbackForm.addEventListener("submit", handleFormSubmit);
-
-  // Form Reset
   resetBtn.addEventListener("click", resetForm);
-
-  // Clear All
   clearAllBtn.addEventListener("click", handleClearAll);
-
-  // Search Filter
   searchInput.addEventListener("input", handleSearch);
 
-  // Character Count
   feedbackTextInput.addEventListener("input", () => {
     const len = feedbackTextInput.value.length;
     charCount.textContent = `${len} / 500`;
     if (len > 0) feedbackError.classList.remove("visible");
   });
 
-  // Rating Selection Buttons
   ratingButtons.forEach(btn => {
     btn.addEventListener("click", () => {
       ratingButtons.forEach(b => b.classList.remove("active"));
@@ -99,11 +88,17 @@ function setupEventListeners() {
     });
   });
 
-  // Input Error Clearing on Type
   studentNameInput.addEventListener("input", () => {
     if (studentNameInput.value.trim()) {
       studentNameInput.classList.remove("error");
       nameError.classList.remove("visible");
+    }
+  });
+
+  studentEmailInput.addEventListener("input", () => {
+    if (NIET_EMAIL_REGEX.test(studentEmailInput.value.trim())) {
+      studentEmailInput.classList.remove("error");
+      emailError.classList.remove("visible");
     }
   });
 
@@ -115,8 +110,17 @@ function setupEventListeners() {
   });
 }
 
-// Validate Form Inputs
-function validateForm(name, course, feedback) {
+function validateEmail(email) {
+  if (!email || !email.trim()) {
+    return { valid: false, message: "Please enter your NIET email" };
+  }
+  if (!NIET_EMAIL_REGEX.test(email.trim())) {
+    return { valid: false, message: "Email must be a valid NIET college ID ending with @niet.co.in" };
+  }
+  return { valid: true };
+}
+
+function validateForm(name, email, course, feedback) {
   let isValid = true;
 
   if (!name.trim()) {
@@ -126,6 +130,17 @@ function validateForm(name, course, feedback) {
   } else {
     studentNameInput.classList.remove("error");
     nameError.classList.remove("visible");
+  }
+
+  const emailCheck = validateEmail(email);
+  if (!emailCheck.valid) {
+    studentEmailInput.classList.add("error");
+    emailError.textContent = emailCheck.message;
+    emailError.classList.add("visible");
+    isValid = false;
+  } else {
+    studentEmailInput.classList.remove("error");
+    emailError.classList.remove("visible");
   }
 
   if (!course.trim()) {
@@ -149,40 +164,37 @@ function validateForm(name, course, feedback) {
   return isValid;
 }
 
-// Handle Form Submission
 function handleFormSubmit(e) {
   e.preventDefault();
 
   const name = studentNameInput.value;
+  const email = studentEmailInput.value;
   const course = courseNameInput.value;
   const feedback = feedbackTextInput.value;
   const rating = parseInt(ratingValueInput.value) || 5;
 
-  if (!validateForm(name, course, feedback)) {
+  if (!validateForm(name, email, course, feedback)) {
     return;
   }
 
-  // Create Feedback Object
   const newFeedback = {
     id: "fb-" + Date.now(),
     name: name.trim(),
+    email: email.trim().toLowerCase(),
     course: course.trim(),
     rating: rating,
     feedback: feedback.trim(),
     timestamp: "Just now"
   };
 
-  // Prepend to array
   feedbacks.unshift(newFeedback);
   saveFeedbacks();
 
-  // Reset form and render
   resetForm();
   renderFeedbacks();
   showToast("Feedback submitted successfully!");
 }
 
-// Reset Form
 function resetForm() {
   feedbackForm.reset();
   ratingValueInput.value = "5";
@@ -192,14 +204,15 @@ function resetForm() {
   charCount.textContent = "0 / 500";
 
   studentNameInput.classList.remove("error");
+  studentEmailInput.classList.remove("error");
   courseNameInput.classList.remove("error");
   feedbackTextInput.classList.remove("error");
   nameError.classList.remove("visible");
+  emailError.classList.remove("visible");
   courseError.classList.remove("visible");
   feedbackError.classList.remove("visible");
 }
 
-// Handle Clear All Feedbacks
 function handleClearAll() {
   if (feedbacks.length === 0) return;
   if (confirm("Are you sure you want to clear all submitted feedback?")) {
@@ -210,7 +223,6 @@ function handleClearAll() {
   }
 }
 
-// Delete Individual Feedback
 function deleteFeedback(id) {
   feedbacks = feedbacks.filter(fb => fb.id !== id);
   saveFeedbacks();
@@ -218,19 +230,16 @@ function deleteFeedback(id) {
   showToast("Feedback removed");
 }
 
-// Search / Filter
 function handleSearch() {
   const query = searchInput.value.toLowerCase().trim();
   renderFeedbacks(query);
 }
 
-// Render Star Icons
 function getStarString(rating) {
   const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
   return `<span class="rating-stars">${stars}</span>`;
 }
 
-// Get User Initials for Avatar
 function getInitials(name) {
   if (!name) return "ST";
   const parts = name.trim().split(" ");
@@ -238,13 +247,13 @@ function getInitials(name) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-// Render Feedback List
 function renderFeedbacks(searchQuery = "") {
   let displayList = feedbacks;
 
   if (searchQuery) {
     displayList = feedbacks.filter(fb => 
       fb.name.toLowerCase().includes(searchQuery) || 
+      (fb.email && fb.email.toLowerCase().includes(searchQuery)) ||
       fb.course.toLowerCase().includes(searchQuery) ||
       fb.feedback.toLowerCase().includes(searchQuery)
     );
@@ -266,6 +275,7 @@ function renderFeedbacks(searchQuery = "") {
           <div class="avatar">${getInitials(fb.name)}</div>
           <div class="user-details">
             <h4>${escapeHtml(fb.name)}</h4>
+            ${fb.email ? `<span class="user-email">${escapeHtml(fb.email)}</span>` : ""}
             <span class="course-tag">${escapeHtml(fb.course)}</span>
           </div>
         </div>
@@ -285,7 +295,6 @@ function renderFeedbacks(searchQuery = "") {
   `).join("");
 }
 
-// Escape HTML for XSS prevention
 function escapeHtml(str) {
   if (!str) return "";
   return str
@@ -296,7 +305,6 @@ function escapeHtml(str) {
     .replace(/'/g, "&#039;");
 }
 
-// Show Toast Message
 function showToast(message) {
   toast.textContent = message;
   toast.classList.add("show");
